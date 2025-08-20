@@ -13,7 +13,7 @@ public class Transaction
     public string Currency { get; set; } = "USD";
     public string? ReferenceId { get; set; }
     public Guid? CategoryId { get; set; }
-    public JsonDocument RawMetadata { get; set; } = JsonDocument.Parse("{}");
+    public string RawMetadata { get; set; } = "{}";
     public string UniquenessHash { get; set; } = default!; // for idempotency
 
     public Account Account { get; set; } = default!;

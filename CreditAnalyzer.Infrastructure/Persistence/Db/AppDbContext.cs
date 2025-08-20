@@ -16,12 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder b)
     {
-        // SQL Server stores JSON as NVARCHAR(MAX); use a converter for JsonDocument
-        var jsonConverter = new ValueConverter<JsonDocument, string>(
-            v => v.RootElement.GetRawText(),
-            s => JsonDocument.Parse(string.IsNullOrWhiteSpace(s) ? "{}" : s, new JsonDocumentOptions()));
-
-      // USERS
+        // USERS
         b.Entity<User>(e =>
         {
             e.ToTable("users");
@@ -83,41 +78,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // TRANSACTIONS
         b.Entity<Transaction>(e =>
         {
-            e.ToTable("transactions", tb =>
-            {
-                // Ensure RawMetadata contains valid JSON text
-                tb.HasCheckConstraint("CK_transactions_RawMetadata_IsJson", "ISJSON([RawMetadata]) = 1");
-            });
-
-            e.HasKey(x => x.Id);
-
-            e.Property(x => x.PostedAt).HasColumnType("date");
-            e.Property(x => x.Amount).HasColumnType("decimal(14,2)").IsRequired();
-            e.Property(x => x.Currency).HasMaxLength(3).IsRequired();
-            e.Property(x => x.UniquenessHash).IsRequired();
-
-            e.Property(x => x.RawMetadata)
-             .HasConversion(jsonConverter)
-             .HasColumnType("nvarchar(max)")
-             .HasDefaultValue("{}");
+            e.HasOne(x => x.Statement)
+                .WithMany(s => s.Transactions)
+                .HasForeignKey(x => x.StatementId)
+                .OnDelete(DeleteBehavior.Cascade);  
 
             e.HasOne(x => x.Account)
-             .WithMany()
-             .HasForeignKey(x => x.AccountId)
-             .OnDelete(DeleteBehavior.Cascade);
-
-            e.HasOne(x => x.Statement)
-             .WithMany(s => s.Transactions)
-             .HasForeignKey(x => x.StatementId)
-             .OnDelete(DeleteBehavior.Cascade);
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.NoAction);  
 
             e.HasOne(x => x.Category)
-             .WithMany()
-             .HasForeignKey(x => x.CategoryId)
-             .OnDelete(DeleteBehavior.SetNull);
-
-            // Idempotency: prevent duplicate imports per account
-            e.HasIndex(x => new { x.AccountId, x.UniquenessHash }).IsUnique();
+                .WithMany()
+                .HasForeignKey(x => x.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);   // ok
         });
     }
 }
