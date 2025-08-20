@@ -4,7 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Minio;
 using CreditAnalyzer.Infrastructure.Persistence.Db;
 using CreditAnalyzer.Application.Abstractions;
+using CreditAnalyzer.Application.Abstractions.Security;
 using CreditAnalyzer.Infrastructure.FileStorage;
+using CreditAnalyzer.Infrastructure.Security;
 
 namespace CreditAnalyzer.Infrastructure;
 
@@ -15,7 +17,7 @@ public static class DependencyInjection
         // EF Core (SQL Server)
         services.AddDbContext<AppDbContext>(opt =>
             opt.UseSqlServer(config.GetConnectionString("Default")));
-
+        
         // Unit of Work & Repository (if you added them)
         services.AddScoped<IUnitOfWork, CreditAnalyzer.Infrastructure.Persistence.EfUnitOfWork>();
         services.AddScoped(typeof(IRepository<>), typeof(CreditAnalyzer.Infrastructure.Persistence.EfRepository<>));
@@ -29,6 +31,9 @@ public static class DependencyInjection
         services.AddSingleton<IFileStorage>(sp =>
             new MinioFileStorage(sp.GetRequiredService<IMinioClient>(), minio["Bucket"] ?? "statements"));
 
+        services.AddSingleton<IJwtTokenService, JwtTokenService>();
+        services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
+        
         return services;
     }
 }

@@ -8,6 +8,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using CreditAnalyzer.Infrastructure;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +48,9 @@ builder.Services.AddAuthorization();
 // Infra (DbContext, Repos/UoW, MinIO, etc.)
 builder.Services.AddInfrastructure(builder.Configuration);
 
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<CreditAnalyzer.Api.Validation.LoginRequestValidator>();
+
 var app = builder.Build();
 
 // =========================
@@ -54,6 +60,15 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();               // MIDDLEWARE: serves /swagger/v1/swagger.json
     app.UseSwaggerUI();             // MIDDLEWARE: serves Swagger UI
+    
+    await using var scope = app.Services.CreateAsyncScope(); // create a DI scope because DbContext is scoped
+    var db = scope.ServiceProvider.GetRequiredService<CreditAnalyzer.Infrastructure.Persistence.Db.AppDbContext>();
+
+    // Apply any pending EF Core migrations (creates DB if missing)
+    await db.Database.MigrateAsync();
+
+    // Seed initial data (admin user, categories, etc.). Make sure your seeder is idempotent.
+    await CreditAnalyzer.Infrastructure.Persistence.Db.DbSeeder.SeedAsync(db);
 }
 
 app.UseSerilogRequestLogging();     // MIDDLEWARE: logs each HTTP request summary
