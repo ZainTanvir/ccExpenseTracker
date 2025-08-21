@@ -9,7 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace CreditAnalyzer.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class AuthController : ControllerBase
 {
     private readonly IRepository<User> _users;
