@@ -1,4 +1,4 @@
-# 💳 CC Expense Tracker
+# 💳 CC Expense Tracker (Backedn)
 
 > Because I'm too lazy (or careless 😅) to manage my credit card expenses — so I built an app to do it for me.
 
